@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "targets": {
+    "/agendar": {
+      "targetKind": "new-target",
+      "projectId": "36f1aab8-8d89-441b-b950-22ffc831f069",
+      "activeDraftId": "f3aa31db-2ecd-4b6e-8e22-363b5c754714",
+      "designSystemPath": ".superdesign/design-system.md",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "app/globals.css",
+        "app/layout.tsx"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "b7fd73a1546e40f68baa48d73f23ffeeceb8b422bbb3bfb10ae61246d7206af8",
+        "app/globals.css": "da21d98f97127ecd34d309ccf85083d87f9beb2e744a0dbf64cc9a6fa024be79",
+        "app/layout.tsx": "be8002f7db63fe99171569d62b8b4032458e164546f891d59d26672c0ef7c9b7"
+      },
+      "drafts": {
+        "f3aa31db-2ecd-4b6e-8e22-363b5c754714": {
+          "title": "Agenda MEI - Home Confiança",
+          "visualDirection": "Confiança DaisyUI — mobile owner home, teal, today list",
+          "currentVersion": 2
+        }
+      },
+      "updatedAt": "2026-09-15T00:45:00.000Z"
+    }
+  }
+}

@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@plugin "daisyui" {
+  themes: false;
+}
+
+/*
+  Paletas para MEI de baixa renda, mobile-first (DaisyUI 5).
+  Regras comuns:
+  - Contraste alto (sol, tela velha, brilho no máximo)
+  - CTA escura o bastante para texto claro (AA)
+  - Status com o mesmo significado em todas: confirmado / pendente / cancelado
+  - Sem luxo pastel, sem linha fininha que some no Android barato
+  - Cantos e campos maiores para dedo
+*/
+
+@plugin "daisyui/theme" {
+  name: "confianca";
+  default: true;
+  color-scheme: light;
+
+  /* Papel frio + teal profundo — confiança de “negócio sério”, sem parecer banco */
+  --color-base-100: #f3f7f7;
+  --color-base-200: #e3ecec;
+  --color-base-300: #c5d4d4;
+  --color-base-content: #14383c;
+  --color-primary: #0a5558;
+  --color-primary-content: #f3fffe;
+  --color-secondary: #d7c4a3;
+  --color-secondary-content: #3a2c16;
+  --color-accent: #1f7a4d;
+  --color-accent-content: #f3fff7;
+  --color-neutral: #1f3336;
+  --color-neutral-content: #eef6f6;
+  --color-info: #1d4f8c;
+  --color-info-content: #f2f7ff;
+  --color-success: #166534;
+  --color-success-content: #f3fff6;
+  --color-warning: #c98910;
+  --color-warning-content: #2a1d00;
+  --color-error: #b42318;
+  --color-error-content: #fff6f5;
+
+  --radius-selector: 0.75rem;
+  --radius-field: 0.75rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.3125rem;
+  --size-field: 0.3125rem;
+  --border: 1.5px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "feira";
+  color-scheme: light;
+
+  /* Papel quente + terracota — vizinhança, salão, marmita, costura */
+  --color-base-100: #fbf6ef;
+  --color-base-200: #f0e4d4;
+  --color-base-300: #ddc7ab;
+  --color-base-content: #3b2414;
+  --color-primary: #9a3a16;
+  --color-primary-content: #fff7f2;
+  --color-secondary: #3f5a3a;
+  --color-secondary-content: #f4f8f0;
+  --color-accent: #b7791f;
+  --color-accent-content: #2a1a00;
+  --color-neutral: #3b2a1d;
+  --color-neutral-content: #f8f1e8;
+  --color-info: #1d4f8c;
+  --color-info-content: #f2f7ff;
+  --color-success: #166534;
+  --color-success-content: #f3fff6;
+  --color-warning: #c98910;
+  --color-warning-content: #2a1d00;
+  --color-error: #b42318;
+  --color-error-content: #fff6f5;
+
+  --radius-selector: 0.75rem;
+  --radius-field: 0.75rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.3125rem;
+  --size-field: 0.3125rem;
+  --border: 1.5px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "clareza";
+  color-scheme: light;
+
+  /* Branco + marinho + âmbar — máxima leitura ao sol / tela de baixa qualidade */
+  --color-base-100: #ffffff;
+  --color-base-200: #eef1f6;
+  --color-base-300: #d5dbe6;
+  --color-base-content: #111827;
+  --color-primary: #0b1f4d;
+  --color-primary-content: #ffffff;
+  --color-secondary: #1f2937;
+  --color-secondary-content: #f9fafb;
+  --color-accent: #c98910;
+  --color-accent-content: #2a1d00;
+  --color-neutral: #111827;
+  --color-neutral-content: #f9fafb;
+  --color-info: #1d4f8c;
+  --color-info-content: #f2f7ff;
+  --color-success: #14532d;
+  --color-success-content: #f3fff6;
+  --color-warning: #c98910;
+  --color-warning-content: #2a1d00;
+  --color-error: #991b1b;
+  --color-error-content: #fff6f5;
+
+  --radius-selector: 0.625rem;
+  --radius-field: 0.625rem;
+  --radius-box: 0.625rem;
+  --size-selector: 0.3125rem;
+  --size-field: 0.3125rem;
+  --border: 2px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "oficina";
+  color-scheme: light;
+
+  /* Grafite + laranja de oficina — serviço, entrega, ofício */
+  --color-base-100: #f6f4f0;
+  --color-base-200: #e8e4dc;
+  --color-base-300: #cfc8bb;
+  --color-base-content: #1f2933;
+  --color-primary: #c2410c;
+  --color-primary-content: #fff7f2;
+  --color-secondary: #334155;
+  --color-secondary-content: #f8fafc;
+  --color-accent: #ca8a04;
+  --color-accent-content: #2a1d00;
+  --color-neutral: #1f2937;
+  --color-neutral-content: #f8fafc;
+  --color-info: #1d4f8c;
+  --color-info-content: #f2f7ff;
+  --color-success: #166534;
+  --color-success-content: #f3fff6;
+  --color-warning: #c98910;
+  --color-warning-content: #2a1d00;
+  --color-error: #b42318;
+  --color-error-content: #fff6f5;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.3125rem;
+  --size-field: 0.3125rem;
+  --border: 1.5px;
+  --depth: 0;
+  --noise: 0;
+}
+
+body {
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+}
