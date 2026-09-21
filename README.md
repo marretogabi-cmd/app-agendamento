@@ -64,12 +64,13 @@ Legenda usada nesta documentação:
 | ESLint | Implementado | ESLint 9 com regras Next.js Core Web Vitals e TypeScript |
 | Funcionalidades de agendamento | Planejado | Nenhum fluxo de domínio foi implementado |
 | PWA instalável | Planejado | Manifest, ícones próprios e service worker ainda não existem |
-| Supabase Auth | Planejado | Autenticação e sessão do prestador ainda não configuradas |
-| PostgreSQL, migrations e RLS | Planejado | Não há diretório `supabase/`, schema, seed nem políticas no repositório |
-| Supabase Edge Functions | Planejado | API e contratos ainda não existem |
+| Supabase Auth | Parcial | Clientes `@supabase/ssr`, `useSession` / `useSignIn` / `useSignOut`; projeto Auth ainda não configurado |
+| PostgreSQL, migrations e RLS | Planejado | Contrato em `docs/schema.prisma`; sem Prisma Client nem migrations no web |
+| Supabase Edge Functions | Parcial | Contratos e hooks em `src/features`; funções ainda não deployadas |
 | Upstash Redis | Planejado | Cache e invalidação ainda não existem |
 | Resend | Planejado | Envio resiliente de emails ainda não existe |
-| Testes automatizados | Planejado | Não há runner ou script `test` configurado |
+| Testes automatizados | Parcial | Vitest cobre mapper, `invokeFunction`, Auth, disponibilidade, reserva, cancelamento, perfil, regras, exceções, agenda, clientes, cancelamento do prestador e o proxy de sessão |
+| Camada web de API | Implementado | `docs/supabase.md`, `docs/integracao.md` e hooks por caso de uso |
 | CI/CD e observabilidade | Planejado | Não há workflows ou instrumentação versionados |
 | Regras de duração, fuso e precedência | Pendente de decisão | Bloqueadas por DEC-01 |
 | Política transacional e de acesso | Pendente de decisão | Bloqueada por DEC-02 |
@@ -391,18 +392,25 @@ app-agendamento/
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx
+├── src/
+│   ├── features/               # um módulo por caso de uso (Auth + Edge Functions)
+│   ├── hooks/
+│   ├── lib/                    # env, supabase, invoke
+│   └── types/
+├── docs/
+│   ├── supabase.md             # catálogo das funções
+│   ├── schema.prisma           # contrato do modelo (sem Prisma Client)
+│   ├── integracao.md           # como o web chama as funções
+│   └── tasks/
 ├── public/
-│   └── arquivos padrão do create-next-app
 ├── AGENTS.md
-├── eslint.config.mjs
-├── next.config.ts
-├── package-lock.json
-├── package.json
-├── postcss.config.mjs
+├── .env.example
+├── proxy.ts                    # refresh de sessão (Next.js 16)
 ├── README.md
-├── STACK.md
-└── tsconfig.json
+└── STACK.md
 ```
+
+A camada de comunicação com o banco está descrita em [docs/integracao.md](./docs/integracao.md). O PWA só chama Auth e Edge Functions.
 
 ### Estrutura-alvo proposta
 
@@ -465,6 +473,10 @@ Abra [http://localhost:3000](http://localhost:3000). O comando atual inicia o se
 
 ```bash
 npm run lint
+npm run format:check
+npm run typecheck
+npm test
+npm run test:coverage
 npm run build
 ```
 
@@ -485,14 +497,24 @@ O script `start` pressupõe que `npm run build` terminou com sucesso.
 | `build` | `next build` | build otimizada e validações do framework |
 | `start` | `next start` | execução da build de produção |
 | `lint` | `eslint` | análise estática conforme configuração do repositório |
+| `format` | `prettier --write .` | formata o código com Prettier |
+| `format:check` | `prettier --check .` | falha se o código estiver fora do Prettier |
+| `typecheck` | `tsc --noEmit` | checagem de tipos isolada |
+| `test` | `vitest run` | testes unitários da fundação e das features até o cancelamento do prestador |
+| `test:coverage` | `vitest run --coverage` | cobertura mínima das tasks 01 a 10 |
 
-Ainda não existem scripts para testes, checagem de tipos isolada, Supabase local, migrations, seeds ou validação de PWA.
+Ainda não existem scripts para Supabase local, migrations, seeds ou validação de PWA.
 
 ## Configuração por ambiente
 
 ### Situação atual
 
-O scaffold atual não exige variáveis de ambiente próprias da aplicação.
+O web usa apenas variáveis públicas do Supabase, documentadas em `.env.example`:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+Copie para `.env.local`. Sem esses valores, a página atual continua no ar; os hooks de Auth e Edge Functions falham ao criar o cliente.
 
 ### Direção planejada
 

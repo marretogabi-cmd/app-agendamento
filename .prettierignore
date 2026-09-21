@@ -1,0 +1,10 @@
+.next
+out
+build
+coverage
+node_modules
+package-lock.json
+.superdesign
+*.md
+!docs/tasks/*.md
+docs/schema.prisma
