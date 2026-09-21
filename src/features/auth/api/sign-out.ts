@@ -5,7 +5,7 @@ import { fail, newRequestId, ok, toApiError } from "@/lib/api";
 export async function signOut(
   client: SupabaseClient,
 ): Promise<ApiResult<{ signedOut: true }>> {
-  const { error } = await client.auth.signOut();
+  const { error } = await client.auth.signOut({ scope: "local" });
   if (error) {
     return fail(
       toApiError({

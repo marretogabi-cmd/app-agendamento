@@ -64,7 +64,7 @@ Legenda usada nesta documentação:
 | ESLint | Implementado | ESLint 9 com regras Next.js Core Web Vitals e TypeScript |
 | Funcionalidades de agendamento | Planejado | Nenhum fluxo de domínio foi implementado |
 | PWA instalável | Planejado | Manifest, ícones próprios e service worker ainda não existem |
-| Supabase Auth | Parcial | Clientes `@supabase/ssr`, `useSession` / `useSignIn` / `useSignOut`; projeto Auth ainda não configurado |
+| Supabase Auth | Implementado no web | Login, cadastro, Google OAuth PKCE, logout local, refresh e sessão SSR; provedor Google ainda depende de configuração externa |
 | PostgreSQL, migrations e RLS | Planejado | Contrato em `docs/schema.prisma`; sem Prisma Client nem migrations no web |
 | Supabase Edge Functions | Parcial | Contratos e hooks em `src/features`; funções ainda não deployadas |
 | Upstash Redis | Planejado | Cache e invalidação ainda não existem |
@@ -515,6 +515,20 @@ O web usa apenas variáveis públicas do Supabase, documentadas em `.env.example
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 Copie para `.env.local`. Sem esses valores, a página atual continua no ar; os hooks de Auth e Edge Functions falham ao criar o cliente.
+
+### Autenticação do prestador
+
+O fluxo web de Auth usa cookies com `@supabase/ssr` e expõe:
+
+- `GET /sign-in` — login por e-mail/senha ou Google;
+- `GET /register` — cadastro por e-mail/senha ou Google;
+- `GET /auth/callback` — troca do código PKCE pela sessão;
+- `POST /sign-out` — encerra somente a sessão do dispositivo atual;
+- `POST /refresh?next=/caminho` — força a renovação da sessão e redireciona.
+
+Para ativar Google OAuth, habilite o provedor no painel do Supabase e configure o client ID e o client secret criados no Google. No Google, autorize a URI do Supabase `https://<project-ref>.supabase.co/auth/v1/callback`. Na lista de Redirect URLs do Supabase, autorize `http://localhost:3000/auth/callback` e a URL equivalente de produção.
+
+Os parâmetros `next` aceitam somente caminhos relativos da própria aplicação. Tokens de sessão permanecem em cookies e não são recebidos ou devolvidos no corpo das rotas.
 
 ### Direção planejada
 

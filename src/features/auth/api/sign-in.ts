@@ -30,7 +30,10 @@ export async function signInWithOAuth(
 ): Promise<ApiResult<{ url: string }>> {
   const { data, error } = await client.auth.signInWithOAuth({
     provider: input.provider,
-    options: { redirectTo: input.redirectTo },
+    options: {
+      redirectTo: input.redirectTo,
+      skipBrowserRedirect: true,
+    },
   });
   if (error) {
     return mapAuthError(error);

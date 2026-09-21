@@ -3,7 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { getPublicEnv } from "../env/public";
 
-export async function createServerSupabaseClient(): Promise<SupabaseClient> {
+type ServerSupabaseClientOptions = {
+  onAuthHeaders?: (headers: Record<string, string>) => void;
+};
+
+export async function createServerSupabaseClient(
+  options: ServerSupabaseClientOptions = {},
+): Promise<SupabaseClient> {
   const cookieStore = await cookies();
   const { url, anonKey } = getPublicEnv();
 
@@ -12,7 +18,7 @@ export async function createServerSupabaseClient(): Promise<SupabaseClient> {
       getAll() {
         return cookieStore.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, headers) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set(name, value, options);
@@ -20,6 +26,7 @@ export async function createServerSupabaseClient(): Promise<SupabaseClient> {
         } catch {
           // Server Component não pode gravar cookies; o proxy refresca a sessão.
         }
+        options.onAuthHeaders?.(headers);
       },
     },
   });

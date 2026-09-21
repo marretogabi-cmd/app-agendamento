@@ -268,7 +268,11 @@ Hook: `useProviderCancelAppointment`. `POST` `{ appointmentId: string }` + `Idem
 | --- | --- | --- |
 | Sessão | `auth.getSession` / `onAuthStateChange` | `useSession` |
 | Entrar | `auth.signInWithPassword` / `signInWithOAuth` | `useSignIn` |
+| Cadastrar | `auth.signUp` / `signInWithOAuth` | `useRegister` |
+| Renovar | `auth.refreshSession` | `POST /refresh` |
 | Sair | `auth.signOut` | `useSignOut` |
+
+O fluxo OAuth SSR usa `GET /auth/callback` para trocar o código PKCE por uma sessão. Login e cadastro ficam em `GET /sign-in` e `GET /register`; logout local usa `POST /sign-out`.
 
 ## Mapa rápido hook → função → efeito no banco
 

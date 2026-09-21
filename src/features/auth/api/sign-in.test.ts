@@ -93,6 +93,13 @@ describe("signInWithOAuth", () => {
     if (result.ok) {
       expect(result.data.url).toContain("https://oauth.example/start");
     }
+    expect(client.auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: "http://localhost:3000",
+        skipBrowserRedirect: true,
+      },
+    });
   });
 
   it("maps provider errors without leaking details", async () => {

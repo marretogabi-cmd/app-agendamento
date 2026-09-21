@@ -76,7 +76,7 @@ describe("useSignIn", () => {
       requestId: "ok",
     });
 
-    const { result } = renderHook(() => useSignIn());
+    const { result } = renderHook(() => useSignIn("/agenda?date=2026-09-21"));
 
     await act(async () => {
       await result.current.signInWithOAuth("google");
@@ -84,5 +84,13 @@ describe("useSignIn", () => {
 
     expect(result.current.oauth.status).toBe("success");
     expect(result.current.oauth.data?.url).toBe("https://oauth.example/start");
+    expect(signInWithOAuth).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        provider: "google",
+        redirectTo:
+          "http://localhost:3000/auth/callback?next=%2Fagenda%3Fdate%3D2026-09-21",
+      }),
+    );
   });
 });

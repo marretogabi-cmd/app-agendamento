@@ -75,7 +75,7 @@ A stack foi escolhida para atender os seguintes direcionadores:
 | Qualidade estática | ESLint + eslint-config-next | Regras TypeScript e Core Web Vitals | Implementado |
 | Gerenciador de pacotes | npm + lockfile v3 | Instalação reproduzível | Implementado |
 | Hospedagem web | Vercel | Build, deploy e entrega do Next.js | Planejado |
-| Autenticação | Supabase Auth | Identidade do prestador, sessão e JWT | Planejado |
+| Autenticação | Supabase Auth | Identidade do prestador, sessão e JWT | Parcial: sessão e login no web; projeto Auth ainda não configurado |
 | API | Supabase Edge Functions | Validação, autorização e orquestração dos casos de uso | Planejado |
 | Banco | Supabase PostgreSQL | Fonte de verdade, constraints, transações, RLS e histórico | Planejado |
 | Cache | Upstash Redis | Cache de disponibilidade e apoio a controles de tráfego | Planejado |
@@ -273,7 +273,7 @@ feature/
 └── index.ts          # superfície pública deliberada
 ```
 
-Essa estrutura é uma diretriz, não um pedido para criar abstrações vazias. Um módulo deve surgir em torno de uma capacidade do produto — perfil, disponibilidade, reservas, agenda, clientes — e não apenas em torno do tipo do arquivo.
+Essa estrutura é uma diretriz, não um pedido para criar abstrações vazias. Um módulo deve surgir em torno de uma capacidade do produto — perfil, disponibilidade, reservas, agenda, clientes — e não apenas em torno do tipo do arquivo. A camada atual de invoke/hooks está em `src/features` e documentada em `docs/integracao.md`.
 
 ### Renderização e fetching
 
@@ -999,7 +999,6 @@ Nenhum plano gratuito deve ser presumido como suficiente sem estimativa e teste.
 
 Precisam de decisão explícita, sem serem inferidas deste documento:
 
-- runner de testes unitários;
 - ferramenta E2E;
 - ferramenta de acessibilidade automatizada;
 - biblioteca de schemas/validação;
@@ -1009,7 +1008,9 @@ Precisam de decisão explícita, sem serem inferidas deste documento:
 - observabilidade e error tracking;
 - ferramenta de fila/worker para outbox;
 - plataforma definitiva de CI, caso não seja GitHub Actions;
-- formatter e convenção de commits/releases.
+- convenção de commits/releases.
+
+Vitest (unitário + cobertura da fundação) e Prettier (com `eslint-config-prettier`) estão em uso no web.
 
 ## ADRs e decisões pendentes
 

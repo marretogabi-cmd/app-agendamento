@@ -2,14 +2,20 @@
 
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
-import { signInWithOAuth, signInWithPassword } from "../api/sign-in";
-import type { OAuthProvider, PasswordCredentials } from "../types";
+import { registerWithPassword } from "../api/register";
+import { signInWithOAuth } from "../api/sign-in";
+import type { OAuthProvider, RegistrationCredentials } from "../types";
 import { createAuthCallbackUrl, normalizeNextPath } from "../utils/next-path";
 
-export function useSignIn(nextPath = "/") {
+export function useRegister(nextPath = "/") {
   const safeNextPath = normalizeNextPath(nextPath);
-  const password = useAsyncAction((credentials: PasswordCredentials) =>
-    signInWithPassword(createBrowserSupabaseClient(), credentials),
+  const password = useAsyncAction((credentials: RegistrationCredentials) =>
+    registerWithPassword(createBrowserSupabaseClient(), credentials, {
+      emailRedirectTo: createAuthCallbackUrl(
+        window.location.origin,
+        safeNextPath,
+      ),
+    }),
   );
   const oauth = useAsyncAction((provider: OAuthProvider) =>
     signInWithOAuth(createBrowserSupabaseClient(), {
@@ -25,7 +31,7 @@ export function useSignIn(nextPath = "/") {
       data: password.data,
     },
     oauth: { status: oauth.status, error: oauth.error, data: oauth.data },
-    signInWithPassword: password.run,
-    signInWithOAuth: oauth.run,
+    registerWithPassword: password.run,
+    registerWithOAuth: oauth.run,
   };
 }

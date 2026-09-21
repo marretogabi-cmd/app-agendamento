@@ -4,11 +4,13 @@ import { signOut } from "./sign-out";
 
 describe("signOut", () => {
   it("confirms a successful logout", async () => {
+    const signOutRequest = vi.fn().mockResolvedValue({ error: null });
     const client = {
-      auth: { signOut: vi.fn().mockResolvedValue({ error: null }) },
+      auth: { signOut: signOutRequest },
     } as unknown as SupabaseClient;
 
     const result = await signOut(client);
+    expect(signOutRequest).toHaveBeenCalledWith({ scope: "local" });
     expect(result).toEqual({
       ok: true,
       data: { signedOut: true },
