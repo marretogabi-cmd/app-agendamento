@@ -1,0 +1,100 @@
+// Contrato do modelo de dados (Notion + STACK.md).
+// NÃO gerar Prisma Client neste app web. Persistência e RLS vivem nas
+// migrations do Supabase; o Next.js só fala com Auth e Edge Functions.
+//
+// Decisões ainda abertas (não inventar colunas aqui):
+// DEC-01 — timezone IANA, duração e passo dos slots no prestador
+// DEC-03 — unicidade de Client: email global (abaixo) vs (provider_id, email)
+// DEC-04 — outbox de email, expiração do token de cancelamento
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+/// Identidade Auth (tabela gerenciada pelo Supabase, não pela aplicação).
+/// profiles.id é FK para auth.users.id.
+model Profile {
+  id        String   @id @db.Uuid
+  name      String
+  publicSlug String  @unique @map("public_slug")
+  phone     String?
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  groups      AvailabilityRuleGroup[]
+  overrides   AvailabilityOverride[]
+  appointments Appointment[]
+
+  @@map("profiles")
+}
+
+model AvailabilityRuleGroup {
+  id         String  @id @default(uuid()) @db.Uuid
+  providerId String  @map("provider_id") @db.Uuid
+  name       String
+  isActive   Boolean @default(false) @map("is_active")
+
+  provider Profile            @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  rules    AvailabilityRule[]
+
+  @@map("AvailabilityRuleGroup")
+}
+
+model AvailabilityRule {
+  id        String @id @default(uuid()) @db.Uuid
+  groupId   String @map("group_id") @db.Uuid
+  /// 1 = segunda … 7 = domingo
+  dayOfWeek Int    @map("day_of_week")
+  startTime DateTime @db.Time @map("start_time")
+  endTime   DateTime @db.Time @map("end_time")
+
+  group AvailabilityRuleGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, dayOfWeek, startTime])
+  @@map("AvailabilityRule")
+}
+
+model Client {
+  id    String @id @default(uuid()) @db.Uuid
+  name  String
+  /// DEC-03: unique global conforme a modelagem Notion; pode virar (providerId, email).
+  email String @unique
+  phone String
+
+  appointments Appointment[]
+
+  @@map("Client")
+}
+
+model AvailabilityOverride {
+  id          String   @id @default(uuid()) @db.Uuid
+  providerId  String   @map("provider_id") @db.Uuid
+  startDatetime DateTime @map("start_datetime")
+  endDatetime   DateTime @map("end_datetime")
+  /// false = bloqueio, true = horário extra
+  isAvailable Boolean @map("is_available")
+
+  provider Profile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("AvailabilityOverride")
+}
+
+model Appointment {
+  id                 String            @id @default(uuid()) @db.Uuid
+  providerId         String            @map("provider_id") @db.Uuid
+  clientId           String            @map("client_id") @db.Uuid
+  startDatetime      DateTime          @map("start_datetime")
+  endDatetime        DateTime          @map("end_datetime")
+  status             AppointmentStatus
+  cancellationToken  String            @unique @map("cancellation_token") @db.Uuid
+
+  provider Profile @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  client   Client  @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@map("Appointment")
+}
