@@ -1,0 +1,26 @@
+export const EdgeFunction = {
+  getAvailability: "get-availability",
+  bookAppointment: "book-appointment",
+  getCancellation: "get-cancellation",
+  cancelAppointment: "cancel-appointment",
+  getProfile: "get-profile",
+  updateProfile: "update-profile",
+  listGroups: "list-groups",
+  createGroup: "create-group",
+  updateGroup: "update-group",
+  deleteGroup: "delete-group",
+  setGroupActive: "set-group-active",
+  listRules: "list-rules",
+  createRule: "create-rule",
+  updateRule: "update-rule",
+  deleteRule: "delete-rule",
+  listOverrides: "list-overrides",
+  createOverride: "create-override",
+  updateOverride: "update-override",
+  deleteOverride: "delete-override",
+  getDailyAgenda: "get-daily-agenda",
+  listClients: "list-clients",
+  cancelAppointmentAsProvider: "cancel-appointment-as-provider",
+} as const;
+
+export type EdgeFunctionName = (typeof EdgeFunction)[keyof typeof EdgeFunction];
