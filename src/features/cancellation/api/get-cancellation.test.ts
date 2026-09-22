@@ -45,10 +45,10 @@ describe("getCancellation", () => {
     }
     expect(client.auth.getSession).not.toHaveBeenCalled();
     expect(client.functions.invoke).toHaveBeenCalledWith(
-      "get-cancellation",
+      `get-cancellation?token=${token}`,
       expect.objectContaining({
         method: "GET",
-        body: { token },
+        body: undefined,
       }),
     );
     expect(client.functions.invoke).not.toHaveBeenCalledWith(

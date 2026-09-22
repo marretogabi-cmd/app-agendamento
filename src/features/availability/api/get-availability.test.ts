@@ -39,10 +39,10 @@ describe("getAvailability", () => {
     }
     expect(client.auth.getSession).not.toHaveBeenCalled();
     expect(client.functions.invoke).toHaveBeenCalledWith(
-      "get-availability",
+      "get-availability?slug=salao-nails&date=2026-09-15",
       expect.objectContaining({
         method: "GET",
-        body: { slug: "salao-nails", date: "2026-09-15" },
+        body: undefined,
       }),
     );
   });

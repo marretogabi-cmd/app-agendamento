@@ -8,3 +8,6 @@ package-lock.json
 *.md
 !docs/tasks/*.md
 docs/schema.prisma
+supabase/config.toml
+supabase/functions
+supabase/migrations

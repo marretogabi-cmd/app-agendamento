@@ -66,10 +66,10 @@ describe("getDailyAgenda", () => {
       expect(result.data.slots[0]).not.toHaveProperty("appointmentId");
     }
     expect(client.functions.invoke).toHaveBeenCalledWith(
-      "get-daily-agenda",
+      "get-daily-agenda?date=2026-09-15",
       expect.objectContaining({
         method: "GET",
-        body: { date: "2026-09-15" },
+        body: undefined,
       }),
     );
   });

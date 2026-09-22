@@ -11,7 +11,10 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "supabase:format:check": "npx --yes deno fmt --check supabase/functions supabase/config.toml supabase/migrations",
+    "supabase:check": "npx --yes deno lint supabase/functions && npx --yes deno check --config supabase/functions/deno.json supabase/functions/_shared/router.ts supabase/functions/health/index.ts",
+    "supabase:test": "npx --yes deno test --config supabase/functions/deno.json supabase/functions/_shared/validation_test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

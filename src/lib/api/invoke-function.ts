@@ -39,6 +39,34 @@ type FunctionsInvoker = {
   };
 };
 
+function withGetQuery(
+  functionName: string,
+  method: InvokeMethod | undefined,
+  body: Record<string, unknown> | undefined,
+): { functionName: string; body: Record<string, unknown> | undefined } {
+  if (method !== "GET" || !body) {
+    return { functionName, body };
+  }
+
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(body)) {
+    if (
+      typeof value !== "string" &&
+      typeof value !== "number" &&
+      typeof value !== "boolean"
+    ) {
+      throw new TypeError(`GET parameter ${key} must be scalar`);
+    }
+    query.set(key, String(value));
+  }
+
+  const encoded = query.toString();
+  return {
+    functionName: encoded ? `${functionName}?${encoded}` : functionName,
+    body: undefined,
+  };
+}
+
 function asInvoker(
   client: SupabaseClient | FunctionsInvoker,
 ): FunctionsInvoker {
@@ -117,9 +145,14 @@ export async function invokeFunction<T>(
   }
 
   try {
+    const invocation = withGetQuery(
+      options.functionName,
+      options.method,
+      options.body,
+    );
     const { data, error } = await withTimeout(
-      invoker.functions.invoke(options.functionName, {
-        body: options.body,
+      invoker.functions.invoke(invocation.functionName, {
+        body: invocation.body,
         headers,
         method: options.method,
       }),

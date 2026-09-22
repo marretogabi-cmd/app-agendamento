@@ -48,10 +48,10 @@ describe("rules api", () => {
       expect(result.data).toEqual([ruleDto]);
     }
     expect(client.functions.invoke).toHaveBeenCalledWith(
-      "list-rules",
+      "list-rules?groupId=group-1",
       expect.objectContaining({
         method: "GET",
-        body: { groupId: "group-1" },
+        body: undefined,
       }),
     );
   });

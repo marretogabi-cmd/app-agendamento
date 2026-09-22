@@ -27,10 +27,11 @@ function createClient(overrides?: {
 }
 
 describe("invokeFunction", () => {
-  it("parses a success envelope", async () => {
+  it("encodes GET input as query parameters and parses a success envelope", async () => {
     const client = createClient();
     const result = await invokeFunction<{ slots: unknown[] }>(client, {
       functionName: "get-availability",
+      method: "GET",
       body: { slug: "salao", date: "2026-09-15" },
     });
 
@@ -39,11 +40,26 @@ describe("invokeFunction", () => {
       expect(result.data.slots).toEqual([]);
     }
     expect(client.functions.invoke).toHaveBeenCalledWith(
-      "get-availability",
+      "get-availability?slug=salao&date=2026-09-15",
       expect.objectContaining({
-        body: { slug: "salao", date: "2026-09-15" },
+        body: undefined,
       }),
     );
+  });
+
+  it("maps a non-scalar GET parameter to UNAVAILABLE without invoking", async () => {
+    const client = createClient();
+    const result = await invokeFunction(client, {
+      functionName: "get-availability",
+      method: "GET",
+      body: { filters: ["invalid"] },
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("UNAVAILABLE");
+    }
+    expect(client.functions.invoke).not.toHaveBeenCalled();
   });
 
   it("maps 409 CONFLICT from Functions error context", async () => {
