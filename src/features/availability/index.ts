@@ -1,3 +1,11 @@
 export { getAvailability } from "./api/get-availability";
+export { getBookingCalendar } from "./api/get-booking-calendar";
 export { useAvailability } from "./hooks/use-availability";
-export type { AvailabilityDto, AvailabilityQuery, TimeSlot } from "./types";
+export { useBookingCalendar } from "./hooks/use-booking-calendar";
+export type {
+  AvailabilityDto,
+  AvailabilityQuery,
+  BookingCalendarDto,
+  BookingCalendarQuery,
+  TimeSlot,
+} from "./types";

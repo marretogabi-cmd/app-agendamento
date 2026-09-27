@@ -44,4 +44,26 @@ describe("MonthCalendar", () => {
       screen.getByRole("heading", { name: "Janeiro de 2027" }),
     ).toBeTruthy();
   });
+
+  it("disables unavailable dates and reports controlled month changes", () => {
+    const onVisibleMonthChange = vi.fn();
+    render(
+      <MonthCalendar
+        disableOutsideMonth
+        disabledDates={new Set(["2026-09-15"])}
+        onSelect={vi.fn()}
+        onVisibleMonthChange={onVisibleMonthChange}
+        selectedDate=""
+        timezone="America/Sao_Paulo"
+        visibleMonth="2026-09-01"
+      />,
+    );
+
+    expect(
+      (screen.getByRole("button", { name: "2026-09-15" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
+    expect(onVisibleMonthChange).toHaveBeenCalledWith("2026-10-01");
+  });
 });

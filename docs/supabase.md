@@ -73,6 +73,41 @@ Lista vazia é sucesso com `slots: []` (estado de UI `empty`, não `error`).
 
 Cache Upstash é detalhe da função, não do hook.
 
+### `getBookingCalendar` — `get-booking-calendar`
+
+| | |
+| --- | --- |
+| Auth | pública |
+| Método | `GET` |
+| Hook | `useBookingCalendar` |
+| API | `getBookingCalendar` |
+| Invalida cache | não |
+
+**Input**
+
+```ts
+{ slug: string; startDate: string; endDate: string }
+```
+
+O intervalo é inclusivo, usa datas `YYYY-MM-DD` e aceita no máximo 42 dias.
+
+**Output**
+
+```ts
+{
+  slug: string;
+  providerName: string;
+  timezone: string;
+  startDate: string;
+  endDate: string;
+  bookableDates: string[];
+}
+```
+
+`bookableDates` contém apenas datas com ao menos um slot livre depois de aplicar regras recorrentes, exceções, reservas confirmadas e horários passados. A resposta não expõe ID interno do prestador, clientes ou tokens de cancelamento.
+
+**Erros:** `VALIDATION`, `NOT_FOUND`, `UNAVAILABLE`, `INTERNAL`.
+
 ### `bookAppointment` — `book-appointment`
 
 | | |
@@ -284,6 +319,7 @@ Ver também [integracao.md](./integracao.md).
 | Hook / API | Função | Tabelas tocadas (servidor) |
 | --- | --- | --- |
 | `useAvailability` | `get-availability` | leitura: regras, exceções, reservas; cache Redis |
+| `useBookingCalendar` | `get-booking-calendar` | leitura agregada de regras, exceções e reservas; cache Redis por data |
 | `useBookAppointment` | `book-appointment` | `Client`, `Appointment`; invalida cache; outbox de email |
 | `useCancellationPreview` | `get-cancellation` | leitura `Appointment` |
 | `useCancelAppointment` | `cancel-appointment` | `Appointment.status`; cache |

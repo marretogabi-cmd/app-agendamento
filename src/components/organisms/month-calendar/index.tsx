@@ -14,6 +14,10 @@ type MonthCalendarProps = {
   selectedDate: string;
   timezone: string;
   onSelect: (date: string) => void;
+  disabledDates?: ReadonlySet<string>;
+  disableOutsideMonth?: boolean;
+  visibleMonth?: string;
+  onVisibleMonthChange?: (month: string) => void;
 };
 
 const weekdayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
@@ -22,11 +26,26 @@ export function MonthCalendar({
   selectedDate,
   timezone,
   onSelect,
+  disabledDates,
+  disableOutsideMonth = false,
+  visibleMonth: controlledVisibleMonth,
+  onVisibleMonthChange,
 }: MonthCalendarProps) {
-  const [visibleMonth, setVisibleMonth] = useState(
-    `${selectedDate.slice(0, 7)}-01`,
+  const [internalVisibleMonth, setInternalVisibleMonth] = useState(
+    selectedDate
+      ? `${selectedDate.slice(0, 7)}-01`
+      : `${todayInTimezone(timezone).slice(0, 7)}-01`,
   );
+  const visibleMonth = controlledVisibleMonth ?? internalVisibleMonth;
   const today = todayInTimezone(timezone);
+
+  function changeMonth(amount: number) {
+    const nextMonth = moveMonth(visibleMonth, amount);
+    if (controlledVisibleMonth === undefined) {
+      setInternalVisibleMonth(nextMonth);
+    }
+    onVisibleMonthChange?.(nextMonth);
+  }
 
   return (
     <section className={styles.calendar} aria-label="Calendário">
@@ -34,7 +53,7 @@ export function MonthCalendar({
         <button
           aria-label="Mês anterior"
           className={styles.monthButton}
-          onClick={() => setVisibleMonth(moveMonth(visibleMonth, -1))}
+          onClick={() => changeMonth(-1)}
           type="button"
         >
           <AppIcon name="chevron-left" />
@@ -43,7 +62,7 @@ export function MonthCalendar({
         <button
           aria-label="Próximo mês"
           className={styles.monthButton}
-          onClick={() => setVisibleMonth(moveMonth(visibleMonth, 1))}
+          onClick={() => changeMonth(1)}
           type="button"
         >
           <AppIcon name="chevron-right" />
@@ -56,21 +75,27 @@ export function MonthCalendar({
             {label}
           </span>
         ))}
-        {calendarDays(visibleMonth).map((item) => (
-          <button
-            aria-label={item.date}
-            aria-pressed={selectedDate === item.date}
-            className={styles.day}
-            data-current-month={item.currentMonth}
-            data-selected={selectedDate === item.date}
-            data-today={today === item.date}
-            key={item.date}
-            onClick={() => onSelect(item.date)}
-            type="button"
-          >
-            {item.day}
-          </button>
-        ))}
+        {calendarDays(visibleMonth).map((item) => {
+          const disabled =
+            disabledDates?.has(item.date) === true ||
+            (disableOutsideMonth && !item.currentMonth);
+          return (
+            <button
+              aria-label={item.date}
+              aria-pressed={selectedDate === item.date}
+              className={styles.day}
+              data-current-month={item.currentMonth}
+              data-selected={selectedDate === item.date}
+              data-today={today === item.date}
+              disabled={disabled}
+              key={item.date}
+              onClick={() => onSelect(item.date)}
+              type="button"
+            >
+              {item.day}
+            </button>
+          );
+        })}
       </div>
     </section>
   );

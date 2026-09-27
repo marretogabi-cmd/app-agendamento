@@ -11,6 +11,7 @@ import {
   deleteOverride,
   deleteRule,
   getAvailability,
+  getBookingCalendar,
   getCancellation,
   getDailyAgenda,
   getProfile,
@@ -37,6 +38,11 @@ const routes: Record<string, RouteDefinition & { successStatus?: number }> = {
     method: "GET",
     auth: "public",
     handler: getAvailability,
+  },
+  "get-booking-calendar": {
+    method: "GET",
+    auth: "public",
+    handler: getBookingCalendar,
   },
   "book-appointment": {
     method: "POST",

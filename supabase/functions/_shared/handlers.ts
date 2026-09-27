@@ -1,11 +1,17 @@
 // deno-lint-ignore no-import-prefix
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.116.0";
-import { calculateDay } from "./availability.ts";
+import {
+  calculateDay,
+  calculateDays,
+  calendarDateRange,
+} from "./availability.ts";
 import {
   enforcePublicRateLimit,
   invalidateAvailability,
   readAvailabilityCache,
+  readAvailabilityCacheRange,
   writeAvailabilityCache,
+  writeAvailabilityCacheRange,
 } from "./cache.ts";
 import { dbError, idempotencyKey, sha256 } from "./http.ts";
 import { ApiError, type JsonRecord, type RequestContext } from "./types.ts";
@@ -108,6 +114,70 @@ export async function getAvailability(context: RequestContext) {
   const result = { slug: publicSlug, date, timezone, slots: available };
   await writeAvailabilityCache(profile.id, date, result);
   return result;
+}
+
+export async function getBookingCalendar(context: RequestContext) {
+  await enforcePublicRateLimit(context.request, "booking-calendar", 60);
+  const publicSlug = slug(context.input);
+  const startDate = dateString(context.input, "startDate");
+  const endDate = dateString(context.input, "endDate");
+  let dates: string[];
+  try {
+    dates = calendarDateRange(startDate, endDate);
+  } catch {
+    throw new ApiError("VALIDATION", 400, "Intervalo de datas invÃ¡lido.", {
+      endDate: ["Consulte um intervalo crescente de no mÃ¡ximo 42 dias."],
+    });
+  }
+  const profile = await profileBySlug(context.admin, publicSlug);
+  type CachedDay = {
+    slug: string;
+    date: string;
+    timezone: string;
+    slots: Array<{ start: string; end: string }>;
+  };
+
+  const cachedByDate = await readAvailabilityCacheRange<CachedDay>(
+    profile.id,
+    dates,
+  );
+  const missingDates = dates.filter((date) => !cachedByDate.has(date));
+  const calculated = missingDates.length > 0
+    ? await calculateDays(context.admin, profile.id, missingDates)
+    : [];
+  const calculatedByDate = new Map(
+    calculated.map((day) => [day.date, day]),
+  );
+
+  await writeAvailabilityCacheRange(
+    profile.id,
+    calculated.map((day) => ({
+      date: day.date,
+      value: {
+        slug: publicSlug,
+        date: day.date,
+        timezone: day.timezone,
+        slots: day.available,
+      },
+    })),
+  );
+
+  const bookableDates = dates.flatMap((date) => {
+    const slots = cachedByDate.get(date)?.slots ??
+      calculatedByDate.get(date)?.available ?? [];
+    return slots.length > 0 ? [date] : [];
+  });
+  const timezone = [...cachedByDate.values()][0]?.timezone ??
+    calculated[0]?.timezone ?? profile.timezone;
+
+  return {
+    slug: publicSlug,
+    providerName: profile.name,
+    timezone,
+    startDate,
+    endDate,
+    bookableDates,
+  };
 }
 
 export async function bookAppointment(context: RequestContext) {

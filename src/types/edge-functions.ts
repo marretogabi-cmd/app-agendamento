@@ -1,5 +1,6 @@
 export const EdgeFunction = {
   getAvailability: "get-availability",
+  getBookingCalendar: "get-booking-calendar",
   bookAppointment: "book-appointment",
   getCancellation: "get-cancellation",
   cancelAppointment: "cancel-appointment",

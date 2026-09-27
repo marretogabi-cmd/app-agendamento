@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.get-availability]
 verify_jwt = false
 
+[functions.get-booking-calendar]
+verify_jwt = false
+
 [functions.book-appointment]
 verify_jwt = false
 

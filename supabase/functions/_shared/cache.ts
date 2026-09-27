@@ -2,6 +2,16 @@ import { ApiError } from "./types.ts";
 
 type RedisValue = { result?: unknown };
 
+const availabilityCacheSchemaVersion = "v2";
+
+export function availabilityCacheKey(
+  providerId: string,
+  providerVersion: string,
+  date: string,
+): string {
+  return `availability:${availabilityCacheSchemaVersion}:${providerId}:${providerVersion}:${date}`;
+}
+
 function redisConfig(): { url: string; token: string } | null {
   const url = Deno.env.get("UPSTASH_REDIS_REST_URL")?.replace(/\/$/, "");
   const token = Deno.env.get("UPSTASH_REDIS_REST_TOKEN")?.trim();
@@ -23,6 +33,23 @@ async function command(parts: Array<string | number>): Promise<unknown> {
   return ((await response.json()) as RedisValue).result;
 }
 
+async function pipeline(
+  commands: Array<Array<string | number>>,
+): Promise<RedisValue[]> {
+  const config = redisConfig();
+  if (!config || commands.length === 0) return [];
+  const response = await fetch(`${config.url}/pipeline`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(commands),
+  });
+  if (!response.ok) throw new Error("redis unavailable");
+  return await response.json() as RedisValue[];
+}
+
 async function providerVersion(providerId: string): Promise<string> {
   try {
     const value = await command(["GET", `availability-version:${providerId}`]);
@@ -41,7 +68,7 @@ export async function readAvailabilityCache<T>(
     const version = await providerVersion(providerId);
     const value = await command([
       "GET",
-      `availability:${providerId}:${version}:${date}`,
+      availabilityCacheKey(providerId, version, date),
     ]);
     return typeof value === "string" ? JSON.parse(value) as T : null;
   } catch {
@@ -60,11 +87,60 @@ export async function writeAvailabilityCache(
     const ttl = Number(Deno.env.get("AVAILABILITY_CACHE_TTL_SECONDS") ?? 60);
     await command([
       "SET",
-      `availability:${providerId}:${version}:${date}`,
+      availabilityCacheKey(providerId, version, date),
       JSON.stringify(value),
       "EX",
       Number.isFinite(ttl) ? Math.max(10, Math.min(ttl, 900)) : 60,
     ]);
+  } catch {
+    // Cache is an optimization. PostgreSQL remains the source of truth.
+  }
+}
+
+export async function readAvailabilityCacheRange<T>(
+  providerId: string,
+  dates: string[],
+): Promise<Map<string, T>> {
+  const values = new Map<string, T>();
+  if (!redisConfig() || dates.length === 0) return values;
+  try {
+    const version = await providerVersion(providerId);
+    const keys = dates.map((date) =>
+      availabilityCacheKey(providerId, version, date)
+    );
+    const result = await command(["MGET", ...keys]);
+    if (!Array.isArray(result)) return values;
+    result.forEach((value, index) => {
+      if (typeof value === "string") {
+        values.set(dates[index], JSON.parse(value) as T);
+      }
+    });
+  } catch {
+    return new Map();
+  }
+  return values;
+}
+
+export async function writeAvailabilityCacheRange(
+  providerId: string,
+  entries: Array<{ date: string; value: unknown }>,
+): Promise<void> {
+  if (!redisConfig() || entries.length === 0) return;
+  try {
+    const version = await providerVersion(providerId);
+    const ttl = Number(Deno.env.get("AVAILABILITY_CACHE_TTL_SECONDS") ?? 60);
+    const safeTtl = Number.isFinite(ttl)
+      ? Math.max(10, Math.min(ttl, 900))
+      : 60;
+    await pipeline(
+      entries.map(({ date, value }) => [
+        "SET",
+        availabilityCacheKey(providerId, version, date),
+        JSON.stringify(value),
+        "EX",
+        safeTtl,
+      ]),
+    );
   } catch {
     // Cache is an optimization. PostgreSQL remains the source of truth.
   }

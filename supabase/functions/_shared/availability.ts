@@ -10,11 +10,24 @@ export type AgendaRange = TimeRange & {
   appointmentId?: string;
 };
 
+export type DayAvailability = {
+  date: string;
+  available: TimeRange[];
+  agenda: AgendaRange[];
+  timezone: string;
+};
+
 type DbRange = {
   start_datetime: string;
   end_datetime: string;
   is_available?: boolean;
   id?: string;
+};
+
+type RuleRow = {
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
 };
 
 function millis(range: TimeRange): [number, number] {
@@ -76,20 +89,35 @@ export function rangesOverlap(left: TimeRange, right: TimeRange): boolean {
   return leftStart < rightEnd && rightStart < leftEnd;
 }
 
-export async function calculateDay(
-  admin: SupabaseClient,
-  providerId: string,
+export function calendarDateRange(
+  startDate: string,
+  endDate: string,
+  maxDays = 42,
+): string[] {
+  const start = Temporal.PlainDate.from(startDate);
+  const end = Temporal.PlainDate.from(endDate);
+  if (Temporal.PlainDate.compare(start, end) > 0) {
+    throw new RangeError("end-before-start");
+  }
+
+  const dates: string[] = [];
+  let cursor = start;
+  while (Temporal.PlainDate.compare(cursor, end) <= 0) {
+    dates.push(cursor.toString());
+    if (dates.length > maxDays) throw new RangeError("range-too-large");
+    cursor = cursor.add({ days: 1 });
+  }
+  return dates;
+}
+
+function calculateDateAvailability(
   date: string,
-): Promise<
-  { available: TimeRange[]; agenda: AgendaRange[]; timezone: string }
-> {
-  const profileResult = await admin
-    .from("profiles")
-    .select("timezone")
-    .eq("id", providerId)
-    .maybeSingle();
-  if (profileResult.error) dbError(profileResult.error);
-  const timezone = profileResult.data?.timezone ?? "America/Sao_Paulo";
+  timezone: string,
+  rules: RuleRow[],
+  overrides: DbRange[],
+  appointments: DbRange[],
+  now: number,
+): DayAvailability {
   const plainDate = Temporal.PlainDate.from(date);
   const dayStart = plainDate
     .toZonedDateTime(timezone)
@@ -100,82 +128,41 @@ export async function calculateDay(
     .toZonedDateTime(timezone)
     .toInstant()
     .epochMilliseconds;
-  const dayOfWeek = plainDate.dayOfWeek;
-
-  const groupsResult = await admin
-    .from("AvailabilityRuleGroup")
-    .select("id")
-    .eq("provider_id", providerId)
-    .eq("is_active", true);
-  if (groupsResult.error) dbError(groupsResult.error);
-  const groupIds = (groupsResult.data ?? []).map((row) => row.id as string);
-
-  let ruleRows: Array<{ start_time: string; end_time: string }> = [];
-  if (groupIds.length > 0) {
-    const rulesResult = await admin
-      .from("AvailabilityRule")
-      .select("start_time,end_time")
-      .in("group_id", groupIds)
-      .eq("day_of_week", dayOfWeek);
-    if (rulesResult.error) dbError(rulesResult.error);
-    ruleRows = rulesResult.data ?? [];
-  }
-
-  const [overridesResult, appointmentsResult] = await Promise.all([
-    admin
-      .from("AvailabilityOverride")
-      .select("start_datetime,end_datetime,is_available")
-      .eq("provider_id", providerId)
-      .lt("start_datetime", new Date(dayEnd).toISOString())
-      .gt("end_datetime", new Date(dayStart).toISOString()),
-    admin
-      .from("Appointment")
-      .select("id,start_datetime,end_datetime")
-      .eq("provider_id", providerId)
-      .eq("status", "CONFIRMED")
-      .lt("start_datetime", new Date(dayEnd).toISOString())
-      .gt("end_datetime", new Date(dayStart).toISOString()),
-  ]);
-  if (overridesResult.error) dbError(overridesResult.error);
-  if (appointmentsResult.error) dbError(appointmentsResult.error);
-
-  const overrides = (overridesResult.data ?? []) as DbRange[];
-  const appointments = (appointmentsResult.data ?? []) as DbRange[];
-  const recurring = ruleRows.map((rule) =>
-    localRuleRange(date, rule.start_time, rule.end_time, timezone)
-  );
-  const extras = overrides
-    .filter((row) => row.is_available)
-    .map((row) =>
-      clipped(
-        { start: row.start_datetime, end: row.end_datetime },
-        dayStart,
-        dayEnd,
-      )
-    )
-    .filter((row): row is TimeRange => row !== null);
-  const blocks = overrides
-    .filter((row) => !row.is_available)
-    .map((row) =>
-      clipped(
-        { start: row.start_datetime, end: row.end_datetime },
-        dayStart,
-        dayEnd,
-      )
-    )
-    .filter((row): row is TimeRange => row !== null);
-  const bookings = appointments.flatMap((row) => {
+  const recurring = rules
+    .filter((rule) => rule.day_of_week === plainDate.dayOfWeek)
+    .map((rule) =>
+      localRuleRange(date, rule.start_time, rule.end_time, timezone)
+    );
+  const dateOverrides = overrides.flatMap((row) => {
     const range = clipped(
       { start: row.start_datetime, end: row.end_datetime },
       dayStart,
       dayEnd,
     );
-    return range ? [{ ...range, id: row.id! }] : [];
+    return range ? [{ ...range, is_available: row.is_available }] : [];
   });
-
+  const dateAppointments = appointments.flatMap((row) => {
+    const range = clipped(
+      { start: row.start_datetime, end: row.end_datetime },
+      dayStart,
+      dayEnd,
+    );
+    return range ? [{ ...range, id: row.id }] : [];
+  });
+  const extras = dateOverrides
+    .filter((row) => row.is_available)
+    .map(({ start, end }) => ({ start, end }));
+  const blocks = dateOverrides
+    .filter((row) => !row.is_available)
+    .map(({ start, end }) => ({ start, end }));
+  const bookings = dateAppointments.map(({ start, end, id }) => ({
+    start,
+    end,
+    id: id!,
+  }));
   const unavailable = [...blocks, ...bookings];
-  const now = Date.now();
   const availableByInterval = new Map<string, TimeRange>();
+
   for (const slot of splitIntoHourlySlots([...recurring, ...extras])) {
     if (
       millis(slot)[0] >= now &&
@@ -184,6 +171,7 @@ export async function calculateDay(
       availableByInterval.set(`${slot.start}/${slot.end}`, slot);
     }
   }
+
   const available = [...availableByInterval.values()].sort(
     (left, right) => millis(left)[0] - millis(right)[0],
   );
@@ -198,5 +186,99 @@ export async function calculateDay(
     })),
   ].sort((a, b) => millis(a)[0] - millis(b)[0]);
 
-  return { available, agenda, timezone };
+  return { date, available, agenda, timezone };
+}
+
+export async function calculateDays(
+  admin: SupabaseClient,
+  providerId: string,
+  dates: string[],
+): Promise<DayAvailability[]> {
+  if (dates.length === 0) return [];
+
+  const orderedDates = [...new Set(dates)].sort();
+  const profileResult = await admin
+    .from("profiles")
+    .select("timezone")
+    .eq("id", providerId)
+    .maybeSingle();
+  if (profileResult.error) dbError(profileResult.error);
+  const timezone = profileResult.data?.timezone ?? "America/Sao_Paulo";
+  const firstDate = Temporal.PlainDate.from(orderedDates[0]);
+  const lastDate = Temporal.PlainDate.from(orderedDates.at(-1)!);
+  const rangeStart = firstDate
+    .toZonedDateTime(timezone)
+    .toInstant()
+    .toString();
+  const rangeEnd = lastDate
+    .add({ days: 1 })
+    .toZonedDateTime(timezone)
+    .toInstant()
+    .toString();
+
+  const groupsResult = await admin
+    .from("AvailabilityRuleGroup")
+    .select("id")
+    .eq("provider_id", providerId)
+    .eq("is_active", true);
+  if (groupsResult.error) dbError(groupsResult.error);
+  const groupIds = (groupsResult.data ?? []).map((row) => row.id as string);
+
+  let rules: RuleRow[] = [];
+  if (groupIds.length > 0) {
+    const rulesResult = await admin
+      .from("AvailabilityRule")
+      .select("day_of_week,start_time,end_time")
+      .in("group_id", groupIds);
+    if (rulesResult.error) dbError(rulesResult.error);
+    rules = (rulesResult.data ?? []) as RuleRow[];
+  }
+
+  const [overridesResult, appointmentsResult] = await Promise.all([
+    admin
+      .from("AvailabilityOverride")
+      .select("start_datetime,end_datetime,is_available")
+      .eq("provider_id", providerId)
+      .lt("start_datetime", rangeEnd)
+      .gt("end_datetime", rangeStart),
+    admin
+      .from("Appointment")
+      .select("id,start_datetime,end_datetime")
+      .eq("provider_id", providerId)
+      .eq("status", "CONFIRMED")
+      .lt("start_datetime", rangeEnd)
+      .gt("end_datetime", rangeStart),
+  ]);
+  if (overridesResult.error) dbError(overridesResult.error);
+  if (appointmentsResult.error) dbError(appointmentsResult.error);
+
+  const overrides = (overridesResult.data ?? []) as DbRange[];
+  const appointments = (appointmentsResult.data ?? []) as DbRange[];
+  const now = Date.now();
+
+  return orderedDates.map((date) =>
+    calculateDateAvailability(
+      date,
+      timezone,
+      rules,
+      overrides,
+      appointments,
+      now,
+    )
+  );
+}
+
+export async function calculateDay(
+  admin: SupabaseClient,
+  providerId: string,
+  date: string,
+): Promise<
+  { available: TimeRange[]; agenda: AgendaRange[]; timezone: string }
+> {
+  const [result] = await calculateDays(admin, providerId, [date]);
+  return {
+    available: result.available,
+    agenda: result.agenda,
+    timezone: result.timezone,
+  };
 }

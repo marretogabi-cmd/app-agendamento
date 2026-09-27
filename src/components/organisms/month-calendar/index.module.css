@@ -67,3 +67,16 @@
 .day:hover:not([data-selected="true"]) {
   background: var(--color-base-200);
 }
+
+.day:disabled {
+  background: transparent;
+  color: color-mix(in srgb, var(--color-base-content) 24%, transparent);
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.day:focus-visible,
+.monthButton:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 38%, transparent);
+  outline-offset: 2px;
+}

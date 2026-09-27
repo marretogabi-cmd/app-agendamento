@@ -91,6 +91,7 @@ O web nunca executa SQL. A coluna “banco” é o efeito **dentro** da função
 | Uso no web | Função | Auth | Efeito |
 | --- | --- | --- | --- |
 | `getAvailability` / `useAvailability` | `get-availability` | anon | SELECT regras, exceções, reservas; GET/SET Redis |
+| `getBookingCalendar` / `useBookingCalendar` | `get-booking-calendar` | anon | SELECT agregado de até 42 dias; GET/SET Redis por data |
 | `bookAppointment` / `useBookAppointment` | `book-appointment` | anon + idempotência | transação `Client` + `Appointment`; DEL cache; outbox email |
 | `getCancellation` / `useCancellationPreview` | `get-cancellation` | token | SELECT `Appointment` (sem `UPDATE`) |
 | `cancelAppointment` / `useCancelAppointment` | `cancel-appointment` | token | `status = CANCELLED`; DEL cache |

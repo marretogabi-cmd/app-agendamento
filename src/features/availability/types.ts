@@ -14,3 +14,15 @@ export type AvailabilityDto = {
   timezone: string;
   slots: TimeSlot[];
 };
+
+export type BookingCalendarQuery = {
+  slug: string;
+  startDate: string;
+  endDate: string;
+};
+
+export type BookingCalendarDto = BookingCalendarQuery & {
+  providerName: string;
+  timezone: string;
+  bookableDates: string[];
+};
