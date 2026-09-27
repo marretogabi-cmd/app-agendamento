@@ -1,0 +1,101 @@
+.sectionEyebrow {
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sectionTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-top: 0.2rem;
+}
+
+.legend {
+  align-items: center;
+  color: color-mix(in srgb, var(--color-base-content) 68%, transparent);
+  display: flex;
+  font-size: 0.68rem;
+  font-weight: 700;
+  gap: 0.3rem;
+}
+
+.legend > span {
+  background: var(--color-base-300);
+  border-radius: 50%;
+  height: 0.55rem;
+  width: 0.55rem;
+}
+
+.legend[data-state="available"] > span {
+  background: var(--color-success);
+}
+
+.legend[data-state="booked"] > span {
+  background: var(--color-info);
+}
+
+.legend[data-state="blocked"] > span {
+  background: var(--color-warning);
+}
+
+.slot {
+  align-items: center;
+  background: var(--color-base-100);
+  border: 1.5px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: 0.28rem 5.6rem 1fr;
+  min-height: 4.4rem;
+  overflow: hidden;
+  padding: 0.75rem 1rem 0.75rem 0;
+}
+
+.statusBar {
+  align-self: stretch;
+  background: var(--color-base-300);
+  border-radius: 0 999px 999px 0;
+}
+
+.slot[data-state="available"] .statusBar {
+  background: var(--color-success);
+}
+
+.slot[data-state="booked"] .statusBar {
+  background: var(--color-info);
+}
+
+.slot[data-state="blocked"] .statusBar {
+  background: var(--color-warning);
+}
+
+.time {
+  font-size: 0.98rem;
+  font-weight: 850;
+}
+
+.time small {
+  color: color-mix(in srgb, var(--color-base-content) 58%, transparent);
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 650;
+  margin-top: 0.15rem;
+}
+
+.slotInfo strong,
+.slotInfo small {
+  display: block;
+}
+
+.slotInfo strong {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.slotInfo small {
+  color: color-mix(in srgb, var(--color-base-content) 62%, transparent);
+  font-size: 0.72rem;
+  margin-top: 0.15rem;
+}
