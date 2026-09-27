@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Paletas · Agendamento",
-  description: "Quatro temas DaisyUI para o app de agendamento",
+  title: "Agendamento",
+  description: "Gerencie seus horários e agendamentos em um só lugar.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

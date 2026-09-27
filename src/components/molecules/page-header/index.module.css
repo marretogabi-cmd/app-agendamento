@@ -1,0 +1,24 @@
+.eyebrow {
+  color: color-mix(in srgb, var(--color-primary) 82%, black);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.title {
+  color: var(--color-base-content);
+  font-size: clamp(1.65rem, 5vw, 2.35rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.description {
+  color: color-mix(in srgb, var(--color-base-content) 72%, transparent);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin-top: 0.55rem;
+  max-width: 42rem;
+}

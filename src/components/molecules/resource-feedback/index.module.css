@@ -1,0 +1,60 @@
+.feedback {
+  align-items: center;
+  background: var(--color-base-100);
+  border: 1.5px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  color: var(--color-base-content);
+  display: flex;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.feedback[data-kind="error"] {
+  background: color-mix(in srgb, var(--color-error) 8%, var(--color-base-100));
+  border-color: color-mix(
+    in srgb,
+    var(--color-error) 45%,
+    var(--color-base-300)
+  );
+}
+
+.title {
+  font-size: 0.95rem;
+  font-weight: 750;
+}
+
+.description {
+  color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin-top: 0.2rem;
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+  border: 3px solid var(--color-base-300);
+  border-radius: 50%;
+  border-top-color: var(--color-primary);
+  flex: 0 0 auto;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.retry {
+  background: var(--color-primary);
+  border: 0;
+  border-radius: var(--radius-field);
+  color: var(--color-primary-content);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 750;
+  margin-left: auto;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.85rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
