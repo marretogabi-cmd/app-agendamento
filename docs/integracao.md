@@ -98,6 +98,7 @@ O web nunca executa SQL. A coluna “banco” é o efeito **dentro** da função
 | `getProfile` / `useProfile` | `get-profile` | JWT | SELECT `profiles` |
 | `updateProfile` / `useUpdateProfile` | `update-profile` | JWT | UPDATE `profiles` |
 | `useGroups` / `useGroupMutation` | `list/create/update/delete-group`, `set-group-active` | JWT | `AvailabilityRuleGroup` |
+| `useScheduleGroups` / `useSaveScheduleGroup` | `save-schedule-group` + leituras existentes | JWT | grupo e regras em uma transação |
 | `useRules` / `useRuleMutation` | `*-rules` | JWT | `AvailabilityRule` |
 | `useOverrides` / `useOverrideMutation` | `*-overrides` | JWT | `AvailabilityOverride` |
 | `useDailyAgenda` | `get-daily-agenda` | JWT | leitura combinada |

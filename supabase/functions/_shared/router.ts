@@ -18,6 +18,7 @@ import {
   listGroups,
   listOverrides,
   listRules,
+  saveScheduleGroup,
   setGroupActive,
   updateGroup,
   updateOverride,
@@ -72,6 +73,11 @@ const routes: Record<string, RouteDefinition & { successStatus?: number }> = {
     method: "POST",
     auth: "provider",
     handler: setGroupActive,
+  },
+  "save-schedule-group": {
+    method: "POST",
+    auth: "provider",
+    handler: saveScheduleGroup,
   },
   "list-rules": { method: "GET", auth: "provider", handler: listRules },
   "create-rule": {

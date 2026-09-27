@@ -10,6 +10,9 @@ export function toAgendaSlot(slot: AgendaSlot): AgendaSlot {
   if (slot.appointmentId) {
     next.appointmentId = slot.appointmentId;
   }
+  if (slot.state === "booked" && slot.clientName) {
+    next.clientName = slot.clientName;
+  }
 
   return next;
 }
@@ -17,6 +20,7 @@ export function toAgendaSlot(slot: AgendaSlot): AgendaSlot {
 export function toDailyAgendaDto(data: DailyAgendaDto): DailyAgendaDto {
   return {
     date: data.date,
+    timezone: data.timezone,
     slots: data.slots.map(toAgendaSlot),
   };
 }

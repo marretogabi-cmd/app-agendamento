@@ -4,6 +4,7 @@ import { getDailyAgenda } from "./get-daily-agenda";
 
 const agendaDto = {
   date: "2026-09-15",
+  timezone: "America/Sao_Paulo",
   slots: [
     {
       start: "2026-09-15T12:00:00.000Z",
@@ -92,12 +93,14 @@ describe("getDailyAgenda", () => {
           ok: true,
           data: {
             date: "2026-09-15",
+            timezone: "America/Sao_Paulo",
             slots: [
               {
                 start: "2026-09-15T12:30:00.000Z",
                 end: "2026-09-15T13:00:00.000Z",
                 state: "booked",
                 appointmentId: "apt-1",
+                clientName: "Ana",
                 cancellation_token: "secret-token",
                 email: "ana@example.com",
               },
@@ -118,6 +121,7 @@ describe("getDailyAgenda", () => {
         end: "2026-09-15T13:00:00.000Z",
         state: "booked",
         appointmentId: "apt-1",
+        clientName: "Ana",
       });
       expect(JSON.stringify(result.data)).not.toContain("secret-token");
       expect(JSON.stringify(result.data)).not.toContain("ana@example.com");
@@ -129,7 +133,11 @@ describe("getDailyAgenda", () => {
       invoke: vi.fn().mockResolvedValue({
         data: {
           ok: true,
-          data: { date: "2026-09-15", slots: [] },
+          data: {
+            date: "2026-09-15",
+            timezone: "America/Sao_Paulo",
+            slots: [],
+          },
           requestId: "empty",
         },
         error: null,

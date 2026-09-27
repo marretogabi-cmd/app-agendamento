@@ -24,6 +24,7 @@ model Profile {
   name      String
   publicSlug String  @unique @map("public_slug")
   phone     String?
+  timezone  String   @default("America/Sao_Paulo")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   groups      AvailabilityRuleGroup[]

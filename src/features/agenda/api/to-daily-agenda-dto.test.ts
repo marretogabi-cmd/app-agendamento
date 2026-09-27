@@ -5,22 +5,27 @@ describe("toDailyAgendaDto", () => {
   it("keeps appointmentId only on booked slots", () => {
     const dto = toDailyAgendaDto({
       date: "2026-09-15",
+      timezone: "America/Sao_Paulo",
       slots: [
         {
           start: "2026-09-15T12:00:00.000Z",
           end: "2026-09-15T12:30:00.000Z",
           state: "available",
+          clientName: "Não deve vazar",
         },
         {
           start: "2026-09-15T12:30:00.000Z",
           end: "2026-09-15T13:00:00.000Z",
           state: "booked",
           appointmentId: "apt-1",
+          clientName: "Ana",
         },
       ],
     });
 
     expect(dto.slots[0]).not.toHaveProperty("appointmentId");
+    expect(dto.slots[0]).not.toHaveProperty("clientName");
     expect(dto.slots[1]?.appointmentId).toBe("apt-1");
+    expect(dto.slots[1]?.clientName).toBe("Ana");
   });
 });

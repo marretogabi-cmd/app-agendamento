@@ -8,6 +8,7 @@ describe("toProfileDto", () => {
       name: "Luciane",
       publicSlug: "luciane-nails",
       phone: "11999999999",
+      timezone: "America/Sao_Paulo",
       updatedAt: "2026-09-14T12:00:00.000Z",
       email: "prestador@salao.com",
       role: "admin",
@@ -18,6 +19,7 @@ describe("toProfileDto", () => {
       name: "Luciane",
       publicSlug: "luciane-nails",
       phone: "11999999999",
+      timezone: "America/Sao_Paulo",
       updatedAt: "2026-09-14T12:00:00.000Z",
     });
     expect(Object.keys(dto).sort()).toEqual([
@@ -25,6 +27,7 @@ describe("toProfileDto", () => {
       "name",
       "phone",
       "publicSlug",
+      "timezone",
       "updatedAt",
     ]);
   });

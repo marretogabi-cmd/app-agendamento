@@ -6,6 +6,7 @@ export function toProfileDto(data: ProfileDto): ProfileDto {
     name: data.name,
     publicSlug: data.publicSlug,
     phone: data.phone,
+    timezone: data.timezone,
     updatedAt: data.updatedAt,
   };
 }

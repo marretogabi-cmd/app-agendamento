@@ -41,3 +41,25 @@ export type UpdateRuleInput = {
   startTime?: string;
   endTime?: string;
 };
+
+export type ScheduleTimeRangeInput = {
+  startTime: string;
+  endTime: string;
+};
+
+export type SaveScheduleGroupInput = {
+  id?: string;
+  name: string;
+  days: DayOfWeek[];
+  ranges: ScheduleTimeRangeInput[];
+  isActive: boolean;
+};
+
+export type SavedScheduleGroupDto = {
+  group: RuleGroupDto;
+  rules: AvailabilityRuleDto[];
+};
+
+export type ScheduleGroupDetailDto = RuleGroupDto & {
+  rules: AvailabilityRuleDto[];
+};

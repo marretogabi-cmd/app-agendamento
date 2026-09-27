@@ -179,10 +179,10 @@ Exigem sessão válida e `auth.uid()` correspondente ao `provider_id` do recurso
 **Output / input de atualização**
 
 ```ts
-{ id: string; name: string; publicSlug: string; phone: string | null; updatedAt: string }
+{ id: string; name: string; publicSlug: string; phone: string | null; timezone: string; updatedAt: string }
 ```
 
-Update envia um subconjunto: `name`, `publicSlug`, `phone`. Slug duplicado → `CONFLICT`. Invalida cache se o slug público mudar.
+Update envia um subconjunto: `name`, `publicSlug`, `phone`, `timezone`. Slug duplicado → `CONFLICT`. Qualquer alteração invalida a disponibilidade em cache.
 
 ### Grupos — `list-groups` / `create-group` / `update-group` / `delete-group` / `set-group-active`
 
@@ -196,8 +196,9 @@ type RuleGroupDto = { id: string; name: string; isActive: boolean };
 - `update-group` `PATCH` `{ id: string; name?: string }`
 - `delete-group` `POST` `{ id: string }`
 - `set-group-active` `POST` `{ id: string; isActive: boolean }` — ativação conflitante → `CONFLICT`
+- `save-schedule-group` `POST` `{ id?: string; name: string; days: number[]; ranges: Array<{ startTime: string; endTime: string }>; isActive: boolean }` — cria ou substitui grupo e regras na mesma transação
 
-Escrita em grupo ativo invalida disponibilidade no servidor.
+`save-schedule-group` aplica o produto cartesiano entre dias e faixas, valida alinhamento em `:00`/`:30`, duração em horas completas e sobreposições. Escritas invalidam a disponibilidade no servidor.
 
 ### Regras — `list-rules` / `create-rule` / `update-rule` / `delete-rule`
 
@@ -235,16 +236,18 @@ Hook: `useDailyAgenda`. Input `{ date: string }`.
 ```ts
 type DailyAgendaDto = {
   date: string;
+  timezone: string;
   slots: Array<{
     start: string;
     end: string;
     state: 'available' | 'booked' | 'blocked';
     appointmentId?: string;
+    clientName?: string;
   }>;
 };
 ```
 
-Não inclui token de cancelamento nem PII além do necessário para o cartão do horário ocupado. Dados de cliente da agenda vêm de `list-clients` ou de um campo mínimo `clientName` se a função autenticada o incluir depois; o DTO atual não expõe email.
+Não inclui token de cancelamento nem PII além do nome necessário para o cartão do horário ocupado. O `clientName` vem do cadastro privado em `ProviderClient`; o DTO não expõe e-mail nem telefone.
 
 ### Clientes — `list-clients`
 

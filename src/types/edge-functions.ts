@@ -10,6 +10,7 @@ export const EdgeFunction = {
   updateGroup: "update-group",
   deleteGroup: "delete-group",
   setGroupActive: "set-group-active",
+  saveScheduleGroup: "save-schedule-group",
   listRules: "list-rules",
   createRule: "create-rule",
   updateRule: "update-rule",

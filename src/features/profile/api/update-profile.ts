@@ -16,6 +16,9 @@ function toUpdateBody(input: UpdateProfileInput): Record<string, unknown> {
   if (input.phone !== undefined) {
     body.phone = input.phone;
   }
+  if (input.timezone !== undefined) {
+    body.timezone = input.timezone;
+  }
   return body;
 }
 

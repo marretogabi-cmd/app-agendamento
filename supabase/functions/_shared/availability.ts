@@ -1,5 +1,7 @@
 // deno-lint-ignore no-import-prefix
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.116.0";
+// deno-lint-ignore no-import-prefix
+import { Temporal } from "npm:@js-temporal/polyfill@0.5.1";
 import { dbError } from "./http.ts";
 
 export type TimeRange = { start: string; end: string };
@@ -19,47 +21,6 @@ function millis(range: TimeRange): [number, number] {
   return [new Date(range.start).valueOf(), new Date(range.end).valueOf()];
 }
 
-function mergeRanges(ranges: TimeRange[]): TimeRange[] {
-  const sorted = [...ranges].sort((a, b) => millis(a)[0] - millis(b)[0]);
-  const result: TimeRange[] = [];
-  for (const current of sorted) {
-    const last = result.at(-1);
-    if (!last || millis(current)[0] > millis(last)[1]) {
-      result.push({ ...current });
-      continue;
-    }
-    if (millis(current)[1] > millis(last)[1]) last.end = current.end;
-  }
-  return result;
-}
-
-function subtractOne(source: TimeRange, removed: TimeRange): TimeRange[] {
-  const [sourceStart, sourceEnd] = millis(source);
-  const [removedStart, removedEnd] = millis(removed);
-  if (removedEnd <= sourceStart || removedStart >= sourceEnd) return [source];
-  const result: TimeRange[] = [];
-  if (removedStart > sourceStart) {
-    result.push({
-      start: source.start,
-      end: new Date(removedStart).toISOString(),
-    });
-  }
-  if (removedEnd < sourceEnd) {
-    result.push({ start: new Date(removedEnd).toISOString(), end: source.end });
-  }
-  return result;
-}
-
-function subtractRanges(
-  source: TimeRange[],
-  removed: TimeRange[],
-): TimeRange[] {
-  return removed.reduce(
-    (remaining, item) => remaining.flatMap((range) => subtractOne(range, item)),
-    source,
-  );
-}
-
 function clipped(
   range: TimeRange,
   dayStart: number,
@@ -76,25 +37,70 @@ function clipped(
     : null;
 }
 
-function ruleRange(
+export function localRuleRange(
   date: string,
   startTime: string,
   endTime: string,
+  timezone: string,
 ): TimeRange {
   return {
-    start: new Date(`${date}T${startTime}Z`).toISOString(),
-    end: new Date(`${date}T${endTime}Z`).toISOString(),
+    start: Temporal.PlainDateTime.from(`${date}T${startTime}`)
+      .toZonedDateTime(timezone)
+      .toInstant()
+      .toString(),
+    end: Temporal.PlainDateTime.from(`${date}T${endTime}`)
+      .toZonedDateTime(timezone)
+      .toInstant()
+      .toString(),
   };
+}
+
+export function splitIntoHourlySlots(ranges: TimeRange[]): TimeRange[] {
+  const hour = 3_600_000;
+  return ranges.flatMap((range) => {
+    const [start, end] = millis(range);
+    const slots: TimeRange[] = [];
+    for (let cursor = start; cursor + hour <= end; cursor += hour) {
+      slots.push({
+        start: new Date(cursor).toISOString(),
+        end: new Date(cursor + hour).toISOString(),
+      });
+    }
+    return slots;
+  });
+}
+
+export function rangesOverlap(left: TimeRange, right: TimeRange): boolean {
+  const [leftStart, leftEnd] = millis(left);
+  const [rightStart, rightEnd] = millis(right);
+  return leftStart < rightEnd && rightStart < leftEnd;
 }
 
 export async function calculateDay(
   admin: SupabaseClient,
   providerId: string,
   date: string,
-): Promise<{ available: TimeRange[]; agenda: AgendaRange[] }> {
-  const dayStart = new Date(`${date}T00:00:00.000Z`).valueOf();
-  const dayEnd = dayStart + 86_400_000;
-  const dayOfWeek = new Date(dayStart).getUTCDay() || 7;
+): Promise<
+  { available: TimeRange[]; agenda: AgendaRange[]; timezone: string }
+> {
+  const profileResult = await admin
+    .from("profiles")
+    .select("timezone")
+    .eq("id", providerId)
+    .maybeSingle();
+  if (profileResult.error) dbError(profileResult.error);
+  const timezone = profileResult.data?.timezone ?? "America/Sao_Paulo";
+  const plainDate = Temporal.PlainDate.from(date);
+  const dayStart = plainDate
+    .toZonedDateTime(timezone)
+    .toInstant()
+    .epochMilliseconds;
+  const dayEnd = plainDate
+    .add({ days: 1 })
+    .toZonedDateTime(timezone)
+    .toInstant()
+    .epochMilliseconds;
+  const dayOfWeek = plainDate.dayOfWeek;
 
   const groupsResult = await admin
     .from("AvailabilityRuleGroup")
@@ -136,7 +142,7 @@ export async function calculateDay(
   const overrides = (overridesResult.data ?? []) as DbRange[];
   const appointments = (appointmentsResult.data ?? []) as DbRange[];
   const recurring = ruleRows.map((rule) =>
-    ruleRange(date, rule.start_time, rule.end_time)
+    localRuleRange(date, rule.start_time, rule.end_time, timezone)
   );
   const extras = overrides
     .filter((row) => row.is_available)
@@ -167,10 +173,19 @@ export async function calculateDay(
     return range ? [{ ...range, id: row.id! }] : [];
   });
 
-  const windows = mergeRanges([...recurring, ...extras]);
-  const available = subtractRanges(
-    subtractRanges(windows, mergeRanges(blocks)),
-    mergeRanges(bookings),
+  const unavailable = [...blocks, ...bookings];
+  const now = Date.now();
+  const availableByInterval = new Map<string, TimeRange>();
+  for (const slot of splitIntoHourlySlots([...recurring, ...extras])) {
+    if (
+      millis(slot)[0] >= now &&
+      !unavailable.some((range) => rangesOverlap(slot, range))
+    ) {
+      availableByInterval.set(`${slot.start}/${slot.end}`, slot);
+    }
+  }
+  const available = [...availableByInterval.values()].sort(
+    (left, right) => millis(left)[0] - millis(right)[0],
   );
   const agenda: AgendaRange[] = [
     ...available.map((range) => ({ ...range, state: "available" as const })),
@@ -183,5 +198,5 @@ export async function calculateDay(
     })),
   ].sort((a, b) => millis(a)[0] - millis(b)[0]);
 
-  return { available, agenda };
+  return { available, agenda, timezone };
 }

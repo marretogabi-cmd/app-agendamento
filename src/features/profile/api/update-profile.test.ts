@@ -8,6 +8,7 @@ const profileDto = {
   name: "Luciane",
   publicSlug: "luciane-nails",
   phone: "11999999999",
+  timezone: "America/Sao_Paulo" as const,
   updatedAt: "2026-09-14T12:00:00.000Z",
 };
 
@@ -44,6 +45,7 @@ describe("updateProfile", () => {
       name: "Luciane",
       publicSlug: "luciane-nails",
       phone: "11999999999",
+      timezone: "America/Sao_Paulo",
     });
 
     expect(result.ok).toBe(true);
@@ -64,6 +66,7 @@ describe("updateProfile", () => {
       name: "Luciane",
       publicSlug: "luciane-nails",
       phone: "11999999999",
+      timezone: "America/Sao_Paulo",
     });
     expect(invokeOptions.body).not.toHaveProperty("id");
     expect(invokeOptions.body).not.toHaveProperty("email");

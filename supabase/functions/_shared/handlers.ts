@@ -48,6 +48,7 @@ function profileDto(row: Record<string, unknown>) {
     name: row.name,
     publicSlug: row.public_slug,
     phone: row.phone,
+    timezone: row.timezone,
     updatedAt: row.updated_at,
   };
 }
@@ -78,7 +79,7 @@ function overrideDto(row: Record<string, unknown>) {
 async function profileBySlug(admin: SupabaseClient, publicSlug: string) {
   const result = await admin
     .from("profiles")
-    .select("id,name,public_slug")
+    .select("id,name,public_slug,timezone")
     .eq("public_slug", publicSlug)
     .maybeSingle();
   if (result.error) dbError(result.error);
@@ -99,8 +100,12 @@ export async function getAvailability(context: RequestContext) {
   }>(profile.id, date);
   if (cached) return cached;
 
-  const { available } = await calculateDay(context.admin, profile.id, date);
-  const result = { slug: publicSlug, date, timezone: "UTC", slots: available };
+  const { available, timezone } = await calculateDay(
+    context.admin,
+    profile.id,
+    date,
+  );
+  const result = { slug: publicSlug, date, timezone, slots: available };
   await writeAvailabilityCache(profile.id, date, result);
   return result;
 }
@@ -218,7 +223,7 @@ export async function getProfile(context: RequestContext) {
   const { id, client } = provider(context);
   const result = await client
     .from("profiles")
-    .select("id,name,public_slug,phone,updated_at")
+    .select("id,name,public_slug,phone,timezone,updated_at")
     .eq("id", id)
     .maybeSingle();
   if (result.error) dbError(result.error);
@@ -228,6 +233,21 @@ export async function getProfile(context: RequestContext) {
 
 export async function updateProfile(context: RequestContext) {
   const { id, client } = provider(context);
+  const supportedTimezones = new Set([
+    "America/Noronha",
+    "America/Sao_Paulo",
+    "America/Manaus",
+    "America/Rio_Branco",
+  ]);
+  const timezone = optionalString(context.input, "timezone", { max: 40 });
+  if (
+    timezone !== undefined &&
+    (timezone === null || !supportedTimezones.has(timezone))
+  ) {
+    throw new ApiError("VALIDATION", 400, "Fuso horário inválido.", {
+      timezone: ["Escolha um fuso horário do Brasil."],
+    });
+  }
   const values = {
     name: optionalString(context.input, "name", { max: 120 }),
     public_slug: context.input.publicSlug === undefined
@@ -238,6 +258,7 @@ export async function updateProfile(context: RequestContext) {
       max: 30,
       nullable: true,
     }),
+    timezone,
   };
   assertNonEmptyPatch(values);
 
@@ -253,20 +274,20 @@ export async function updateProfile(context: RequestContext) {
       .from("profiles")
       .update(patch)
       .eq("id", id)
-      .select("id,name,public_slug,phone,updated_at")
+      .select("id,name,public_slug,phone,timezone,updated_at")
       .single();
   } else {
-    if (!values.name || !values.public_slug) {
+    if (!values.name || !values.public_slug || !values.phone) {
       throw new ApiError(
         "VALIDATION",
         400,
-        "Nome e slug são obrigatórios no primeiro cadastro.",
+        "Nome, celular e slug são obrigatórios no primeiro cadastro.",
       );
     }
     result = await client
       .from("profiles")
       .insert({ id, ...values })
-      .select("id,name,public_slug,phone,updated_at")
+      .select("id,name,public_slug,phone,timezone,updated_at")
       .single();
   }
   if (result.error) dbError(result.error);
@@ -294,6 +315,99 @@ export async function createGroup(context: RequestContext) {
     .single();
   if (result.error) dbError(result.error);
   return groupDto(result.data);
+}
+
+function minutesFromTime(value: string): number {
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+export async function saveScheduleGroup(context: RequestContext) {
+  const { id: providerId, client } = provider(context);
+  const id = context.input.id === undefined ? null : uuid(context.input, "id");
+  const name = requiredString(context.input, "name", { max: 120 });
+  const isActive = requiredBoolean(context.input, "isActive");
+  const daysInput = context.input.days;
+  const rangesInput = context.input.ranges;
+
+  if (!Array.isArray(daysInput) || daysInput.length === 0) {
+    throw new ApiError("VALIDATION", 400, "Selecione ao menos um dia.");
+  }
+  if (!Array.isArray(rangesInput) || rangesInput.length === 0) {
+    throw new ApiError("VALIDATION", 400, "Informe ao menos uma faixa.");
+  }
+
+  const days = [
+    ...new Set(daysInput.map((day) => {
+      if (
+        typeof day !== "number" || !Number.isInteger(day) || day < 1 || day > 7
+      ) {
+        throw new ApiError("VALIDATION", 400, "Dia da semana inválido.");
+      }
+      return day;
+    })),
+  ];
+
+  const ranges = rangesInput.map((range, index) => {
+    if (typeof range !== "object" || range === null || Array.isArray(range)) {
+      throw new ApiError("VALIDATION", 400, "Faixa de horário inválida.");
+    }
+    const input = range as JsonRecord;
+    const startTime = timeString(input, "startTime");
+    const endTime = timeString(input, "endTime");
+    assertTimeInterval(startTime, endTime);
+    const start = minutesFromTime(startTime);
+    const end = minutesFromTime(endTime);
+    if (start % 30 !== 0 || end % 30 !== 0 || (end - start) % 60 !== 0) {
+      throw new ApiError(
+        "VALIDATION",
+        400,
+        `A faixa ${
+          index + 1
+        } deve usar intervalos de 30 minutos e conter horas completas.`,
+      );
+    }
+    return { startTime, endTime };
+  });
+
+  if (
+    ranges.some((range, index) =>
+      ranges.slice(index + 1).some((other) =>
+        range.startTime < other.endTime && other.startTime < range.endTime
+      )
+    )
+  ) {
+    throw new ApiError("CONFLICT", 409, "As faixas informadas se sobrepõem.");
+  }
+
+  const rules = days.flatMap((dayOfWeek) =>
+    ranges.map((range) => ({ dayOfWeek, ...range }))
+  );
+  const result = await client.rpc("save_schedule_group", {
+    p_group_id: id,
+    p_name: name,
+    p_rules: rules,
+    p_is_active: isActive,
+  });
+  if (result.error) dbError(result.error);
+  const data = result.data as JsonRecord;
+  if (data.kind === "not_found") notFound();
+  if (data.kind === "unauthenticated") {
+    throw new ApiError("UNAUTHENTICATED", 401, "Sessão necessária.");
+  }
+  if (data.kind === "validation") {
+    throw new ApiError("VALIDATION", 400, "Revise os dados informados.");
+  }
+  if (data.kind === "conflict") {
+    throw new ApiError(
+      "CONFLICT",
+      409,
+      "O grupo conflita com outro grupo ativo.",
+    );
+  }
+
+  await invalidateAvailability(providerId);
+  return { group: data.group, rules: data.rules };
 }
 
 export async function updateGroup(context: RequestContext) {
@@ -671,8 +785,47 @@ export async function deleteOverride(context: RequestContext) {
 export async function getDailyAgenda(context: RequestContext) {
   const { id } = provider(context);
   const date = dateString(context.input, "date");
-  const { agenda } = await calculateDay(context.admin, id, date);
-  return { date, slots: agenda };
+  const { agenda, timezone } = await calculateDay(context.admin, id, date);
+  const appointmentIds = agenda.flatMap((slot) =>
+    slot.appointmentId ? [slot.appointmentId] : []
+  );
+  const clientNames = new Map<string, string>();
+
+  if (appointmentIds.length > 0) {
+    const appointments = await context.admin
+      .from("Appointment")
+      .select("id,client_id")
+      .eq("provider_id", id)
+      .in("id", appointmentIds);
+    if (appointments.error) dbError(appointments.error);
+    const clientIds = (appointments.data ?? []).map((item) => item.client_id);
+    if (clientIds.length > 0) {
+      const clients = await context.admin
+        .from("ProviderClient")
+        .select("client_id,name")
+        .eq("provider_id", id)
+        .in("client_id", clientIds);
+      if (clients.error) dbError(clients.error);
+      const namesByClient = new Map(
+        (clients.data ?? []).map((client) => [client.client_id, client.name]),
+      );
+      for (const appointment of appointments.data ?? []) {
+        const clientName = namesByClient.get(appointment.client_id);
+        if (clientName) clientNames.set(appointment.id, clientName);
+      }
+    }
+  }
+
+  return {
+    date,
+    timezone,
+    slots: agenda.map((slot) => ({
+      ...slot,
+      ...(slot.appointmentId && clientNames.has(slot.appointmentId)
+        ? { clientName: clientNames.get(slot.appointmentId) }
+        : {}),
+    })),
+  };
 }
 
 export async function listClients(context: RequestContext) {
