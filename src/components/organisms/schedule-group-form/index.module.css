@@ -1,0 +1,199 @@
+.card {
+  background: var(--color-base-100);
+  border: 1.5px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1rem;
+}
+
+.cardTitle {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.cardDescription {
+  color: color-mix(in srgb, var(--color-base-content) 65%, transparent);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  margin-top: 0.25rem;
+}
+
+.field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field > span {
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.field input {
+  background: var(--color-base-100);
+  border: 1.5px solid var(--color-base-300);
+  border-radius: var(--radius-field);
+  color: var(--color-base-content);
+  min-height: 2.9rem;
+  padding: 0.65rem 0.8rem;
+  width: 100%;
+}
+
+.field input:focus {
+  border-color: var(--color-primary);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.dayOption {
+  cursor: pointer;
+  position: relative;
+}
+
+.dayOption input {
+  height: 1px;
+  opacity: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.dayOption span {
+  align-items: center;
+  background: var(--color-base-200);
+  border: 1.5px solid var(--color-base-300);
+  border-radius: var(--radius-field);
+  display: flex;
+  font-size: 0.75rem;
+  font-weight: 750;
+  justify-content: center;
+  min-height: 2.8rem;
+}
+
+.dayOption[data-selected="true"] span {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-content);
+}
+
+.dayOption input:focus-visible + span {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.rangeRow {
+  align-items: end;
+  background: var(--color-base-200);
+  border: 0;
+  border-radius: var(--radius-field);
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr 1fr;
+  padding: 0.8rem;
+}
+
+.addButton,
+.removeButton,
+.cancelButton,
+.saveButton {
+  align-items: center;
+  border-radius: var(--radius-field);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.9rem;
+}
+
+.addButton,
+.cancelButton {
+  background: var(--color-base-100);
+  border: 1.5px solid var(--color-base-300);
+  color: var(--color-base-content);
+  gap: 0.35rem;
+}
+
+.removeButton {
+  background: transparent;
+  border: 0;
+  color: var(--color-error);
+  grid-column: 1 / -1;
+}
+
+.saveButton {
+  background: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary-content);
+}
+
+.addButton:disabled,
+.removeButton:disabled,
+.cancelButton:disabled,
+.saveButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.activeOption {
+  align-items: center;
+  background: color-mix(
+    in srgb,
+    var(--color-primary) 7%,
+    var(--color-base-100)
+  );
+  border: 1.5px solid
+    color-mix(in srgb, var(--color-primary) 30%, var(--color-base-300));
+  border-radius: var(--radius-box);
+  cursor: pointer;
+  display: flex;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+.activeOption input {
+  accent-color: var(--color-primary);
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.activeOption strong,
+.activeOption small {
+  display: block;
+}
+
+.activeOption strong {
+  font-size: 0.85rem;
+}
+
+.activeOption small {
+  color: color-mix(in srgb, var(--color-base-content) 65%, transparent);
+  font-size: 0.72rem;
+  margin-top: 0.15rem;
+}
+
+.error {
+  background: color-mix(in srgb, var(--color-error) 9%, var(--color-base-100));
+  border: 1.5px solid
+    color-mix(in srgb, var(--color-error) 40%, var(--color-base-300));
+  border-radius: var(--radius-field);
+  color: var(--color-error);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.8rem;
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: 1.25rem;
+  }
+
+  .rangeRow {
+    grid-template-columns: 1fr 1fr auto;
+  }
+
+  .removeButton {
+    grid-column: auto;
+  }
+}
